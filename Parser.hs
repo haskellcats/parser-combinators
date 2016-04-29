@@ -1,8 +1,10 @@
 {-# LANGUAGE LambdaCase #-}
 module Parser where
 
+import Prelude hiding (takeWhile)
 import Control.Applicative
 import Data.Monoid
+import Data.Char
 
 type Error = String
 newtype Parser a = Parser (String -> Either Error (a, String))
@@ -81,17 +83,46 @@ option (Parser p) = Parser $ \s -> case p s of
 sepBy :: Parser a -> Parser b -> Parser [b]
 sepBy sep item = go where
   go = do
-    option item >>= \case
+    optional item >>= \case
       Nothing -> return []
-      Just x -> option sep >>= \case
+      Just x -> optional sep >>= \case
         Nothing -> return [x]
         Just _ -> do
-          xs <- go'
+          xs <- go
           return (x:xs)
-  go' = do
-    x <- item 
-    option sep >>= \case
-      Nothing -> return [x]
-      Just _ -> do
-        xs <- go'
-        return (x:xs)
+
+whitespace :: Parser ()
+whitespace = many (char ' ') >> return ()
+
+satisfy :: (Char -> Bool) -> Parser Char
+satisfy check = Parser $ \case
+  "" -> Left "expected char not end of input"
+  (c:cs) -> if check c
+    then Right (c, cs)
+    else Left (show c ++ " failed to satisfy check")
+
+takeWhile :: (Char -> Bool) -> Parser [Char]
+takeWhile f = optional (satisfy f) >>= \case
+  Nothing -> return []
+  Just c -> do
+    cs <- takeWhile f
+    return (c:cs)
+
+takeWhile1 f = takeWhile f >>= \case
+  [] -> fail "takeWhile1 failed"
+  xs -> return xs
+
+notIn :: [Char] -> Parser Char
+notIn chars = satisfy (\c -> not (elem c chars))
+
+integer :: Parser Integer
+integer = go where
+  go = optional (char '-') >>= \case
+    Nothing -> go' id
+    Just _  -> go' negate
+  go' sign = sign . read <$> takeWhile1 isDigit
+
+many1 :: Parser a -> Parser [a]
+many1 p = many p >>= \case
+  [] -> fail "many1 failed"
+  xs -> return xs
