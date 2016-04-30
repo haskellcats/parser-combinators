@@ -23,11 +23,14 @@ sexpr atom = do
 
 -- a parser for the dynamic type D
 atom :: Parser D
-atom = choice
-  [ DI <$> integer
-  , DNull <$ string "nil"
-  , DS <$> many1 (notIn " )(")
-  ]
+atom =
+  let sym1 = alpha <|> inClass "!@#$%^&*-+_=~|\\:;'<>/?.," in
+  let sym = sym1 <|> digit in
+  choice
+    [ DI <$> (integer `notFollowedBy` sym1)
+    , DNull <$ keyword "nil" sym
+    , DS <$> liftA2 (:) sym1 (many sym)
+    ]
 
 parser :: Parser (S D)
 parser = do

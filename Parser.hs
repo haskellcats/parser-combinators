@@ -101,6 +101,9 @@ satisfy check = Parser $ \case
     then Right (c, cs)
     else Left (show c ++ " failed to satisfy check")
 
+inClass :: [Char] -> Parser Char
+inClass chars = satisfy (`elem` chars)
+
 takeWhile :: (Char -> Bool) -> Parser [Char]
 takeWhile f = optional (satisfy f) >>= \case
   Nothing -> return []
@@ -126,3 +129,33 @@ many1 :: Parser a -> Parser [a]
 many1 p = many p >>= \case
   [] -> fail "many1 failed"
   xs -> return xs
+
+alpha :: Parser Char
+alpha = satisfy isAlpha
+
+alphaNum :: Parser Char
+alphaNum = alpha <|> digit
+
+digit :: Parser Char
+digit = satisfy isDigit
+
+getInput :: Parser String
+getInput = Parser $ \s -> Right (s, s)
+
+hypothetically :: Parser a -> Parser (Maybe a)
+hypothetically p = do
+  result <- parse p <$> getInput
+  case result of
+    Left _ -> return Nothing
+    Right (x,_) -> return (Just x)
+
+notFollowedBy :: Parser a -> Parser b -> Parser a
+notFollowedBy p fol = do
+  x <- p
+  hypothetically fol >>= \case
+    Nothing -> return x
+    Just _ -> fail "unexpectedly followed by"
+
+keyword :: String -> Parser a -> Parser String
+keyword s fol = string s `notFollowedBy` fol
+  
