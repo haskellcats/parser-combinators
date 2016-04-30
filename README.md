@@ -27,8 +27,8 @@ atom =
   let sym1 = alpha <|> inClass "!@#$%^&*-+_=~|\\:;'<>/?.," in
   let sym = sym1 <|> digit in
   choice
-    [ DI <$> (integer `notFollowedBy` sym1)
-    , DNull <$ keyword "nil" sym
+    [ DI <$> integer `notFollowedBy` sym1
+    , DNull <$ string "nil" `notFollowedBy` sym
     , DS <$> liftA2 (:) sym1 (many sym)
     ]
 

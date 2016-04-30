@@ -156,6 +156,3 @@ notFollowedBy p fol = do
     Nothing -> return x
     Just _ -> fail "unexpectedly followed by"
 
-keyword :: String -> Parser a -> Parser String
-keyword s fol = string s `notFollowedBy` fol
-  
