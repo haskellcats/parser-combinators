@@ -22,7 +22,12 @@ atom = choice
   ]
 
 parser :: Parser (S D)
-parser = fmap Atom atom <|> sexpr atom
+parser = do
+  whitespace
+  exp <- fmap Atom atom <|> sexpr atom
+  whitespace
+  endOfInput
+  return exp
 
 parseSExp :: String -> Either Error (S D)
 parseSExp = fmap fst . parse parser
